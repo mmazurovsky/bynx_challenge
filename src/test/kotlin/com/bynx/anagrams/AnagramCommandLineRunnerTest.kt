@@ -2,6 +2,7 @@ package com.bynx.anagrams
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class AnagramCommandLineRunnerTest {
@@ -115,5 +116,56 @@ class AnagramCommandLineRunnerTest {
         val output = StringBuilder()
         AnagramCommandLineRunner().run("\n   \nexit".reader().buffered(), output)
         assertEquals("Anagrams. Type 'help' for commands.\n> > > ", output.toString())
+    }
+
+    /** A throwable that is an [Error] rather than an [Exception]. */
+    private class UnrecoverableTestError : Error()
+
+    /** An [AnagramService] whose commands always fail, to exercise the guard. */
+    private class FailingAnagramService(private val failure: () -> Throwable) : AnagramService() {
+        override fun checkAnagrams(first: String, second: String): Boolean = throw failure()
+        override fun findRecordedAnagramsOf(text: String): List<String> = throw failure()
+    }
+
+    /** Feeds [commands] to a CLI backed by [anagramService]. */
+    private fun runWith(anagramService: AnagramService, vararg commands: String): List<String> {
+        val output = StringBuilder()
+        AnagramCommandLineRunner(anagramService)
+            .run(commands.joinToString("\n").reader().buffered(), output)
+        return output.toString()
+            .split("\n")
+            .map { it.replace(Regex("^(> )+"), "").trim() }
+            .filter { it.isNotEmpty() }
+    }
+
+    @Test
+    fun `a failing command is reported and the loop carries on`() {
+        val output = runWith(
+            FailingAnagramService { IllegalStateException("index unavailable") },
+            "check listen silent",
+            "help",
+            "exit",
+        )
+        assertTrue("Something went wrong with that command. It has been skipped." in output)
+        assertTrue("Detail: index unavailable" in output)
+        assertTrue(output.any { "check" in it }, "the loop kept running and printed the help text")
+    }
+
+    @Test
+    fun `a failure without a message falls back to the exception name`() {
+        val output = runWith(
+            FailingAnagramService { IllegalStateException() },
+            "find listen",
+            "exit",
+        )
+        assertTrue("Detail: IllegalStateException" in output)
+        assertTrue(output.none { "null" in it }, "no 'Detail: null' is printed")
+    }
+
+    @Test
+    fun `an Error is not swallowed by the per command guard`() {
+        assertFailsWith<UnrecoverableTestError> {
+            runWith(FailingAnagramService { UnrecoverableTestError() }, "check listen silent", "exit")
+        }
     }
 }

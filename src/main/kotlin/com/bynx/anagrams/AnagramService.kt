@@ -18,7 +18,7 @@ package com.bynx.anagrams
  * the instance — nothing is persisted between runs. Not thread-safe: the
  * program is a single-threaded REPL.
  */
-class AnagramService(
+open class AnagramService(
     private val textNormalizer: TextNormalizer = TextNormalizer(),
 ) {
 
@@ -44,7 +44,7 @@ class AnagramService(
      * itself. Equality is judged after normalization, making "Listen" and
      * "listen!" the same text.
      */
-    fun checkAnagrams(first: String, second: String): Boolean {
+    open fun checkAnagrams(first: String, second: String): Boolean {
         recordText(first)
         recordText(second)
         return textNormalizer.normalizeText(first) != textNormalizer.normalizeText(second) &&
@@ -61,7 +61,7 @@ class AnagramService(
      *
      * This is a query: it does not record [text].
      */
-    fun findRecordedAnagramsOf(text: String): List<String> {
+    open fun findRecordedAnagramsOf(text: String): List<String> {
         val queried = textNormalizer.normalizeText(text)
         return textsBySignature[textNormalizer.computeAnagramSignature(text)]
             .orEmpty()

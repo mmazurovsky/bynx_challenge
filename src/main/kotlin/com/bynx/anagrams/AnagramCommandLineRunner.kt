@@ -26,6 +26,11 @@ class AnagramCommandLineRunner(
      *
      * Input and output are parameters rather than `System.in`/`System.out` so
      * the whole loop can be exercised in tests.
+     *
+     * A command that fails unexpectedly is reported and skipped, leaving the
+     * session and its history intact. Only [Exception] is caught: an [Error]
+     * means the JVM itself is in trouble, and answering further questions
+     * would be dishonest, so it is left to the guard in [runGuarded].
      */
     fun run(input: BufferedReader, output: Appendable) {
         output.appendLine(BANNER)
@@ -45,12 +50,17 @@ class AnagramCommandLineRunner(
             val command = arguments.first()
             val operands = arguments.drop(1)
 
-            when (command) {
-                "exit" -> return
-                "help" -> output.appendLine(HELP)
-                "check" -> output.appendLine(handleCheckCommand(operands))
-                "find" -> output.appendLine(handleFindCommand(operands))
-                else -> output.appendLine("Unknown command '$command'. Type 'help' for commands.")
+            try {
+                when (command) {
+                    "exit" -> return
+                    "help" -> output.appendLine(HELP)
+                    "check" -> output.appendLine(handleCheckCommand(operands))
+                    "find" -> output.appendLine(handleFindCommand(operands))
+                    else -> output.appendLine("Unknown command '$command'. Type 'help' for commands.")
+                }
+            } catch (exception: Exception) {
+                output.appendLine("Something went wrong with that command. It has been skipped.")
+                output.appendLine("Detail: ${describeFailure(exception)}")
             }
         }
     }
@@ -73,6 +83,16 @@ class AnagramCommandLineRunner(
 }
 
 private class UnterminatedQuoteException : Exception()
+
+/**
+ * A single plain line describing [throwable], for showing to the user.
+ *
+ * Exception messages are often absent, so the class name is used as a
+ * fallback rather than printing "null". Stack traces are never shown: they
+ * mean nothing to someone typing words into a prompt.
+ */
+internal fun describeFailure(throwable: Throwable): String =
+    throwable.message?.takeIf(String::isNotBlank) ?: throwable::class.simpleName ?: "unknown error"
 
 /**
  * Splits a command line into a command and its arguments.
