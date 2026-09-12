@@ -61,6 +61,8 @@ than a scan of every past entry.
   (`q́` → `q`).
 - A text is not an anagram of itself.
 - Letters and decimal digits count, so `abc123` and `321cba` are anagrams.
+- Only characters in the Basic Multilingual Plane are supported. Letters outside it
+  (e.g. Gothic `𐌰`) are dropped, so `check "𐌰𐌱" "𐌱𐌰"` prints `false`.
 
 ## Trade-offs and what was left out
 
