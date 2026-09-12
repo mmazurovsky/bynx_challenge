@@ -6,10 +6,12 @@ each other and recalls previously entered anagrams of a text.
 ## Run it
 
 ```
-./gradlew run
+./gradlew --quiet --console=plain run
 ```
 
 That starts the program interactively: it prints a `>` prompt and waits for you to type a command.
+The two flags keep Gradle's progress bar and task output from overwriting the prompt; plain
+`./gradlew run` works too, but its console is garbled.
 
 Piping commands in instead of typing them gives:
 
