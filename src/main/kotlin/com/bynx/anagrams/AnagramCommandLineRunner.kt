@@ -13,25 +13,12 @@ private val HELP = """
     Quote texts that contain spaces: check "dormitory" "dirty room"
 """.trimIndent()
 
-/**
- * The read-eval-print loop: reads commands, dispatches them to
- * [AnagramService] and prints the answers.
- */
+/** The read-eval-print loop: reads commands, dispatches them and prints the answers. */
 class AnagramCommandLineRunner(
-    private val anagramService: AnagramService = AnagramService(),
+    private val anagramService: AnagramService = AnagramServiceImpl(),
 ) {
 
-    /**
-     * Runs the loop until [input] is exhausted or the user exits.
-     *
-     * Input and output are parameters rather than `System.in`/`System.out` so
-     * the whole loop can be exercised in tests.
-     *
-     * A command that fails unexpectedly is reported and skipped, leaving the
-     * session and its history intact. Only [Exception] is caught: an [Error]
-     * means the JVM itself is in trouble, and answering further questions
-     * would be dishonest, so it is left to the guard in [runGuarded].
-     */
+    /** Runs the loop until [input] is exhausted or the user exits. */
     fun run(input: BufferedReader, output: Appendable) {
         output.appendLine(BANNER)
 
@@ -59,6 +46,7 @@ class AnagramCommandLineRunner(
                     else -> output.appendLine("Unknown command '$command'. Type 'help' for commands.")
                 }
             } catch (exception: Exception) {
+                // Only Exception: an Error is left to the guard in runGuarded.
                 output.appendLine("Something went wrong with that command. It has been skipped.")
                 output.appendLine("Detail: ${describeFailure(exception)}")
             }
@@ -84,24 +72,11 @@ class AnagramCommandLineRunner(
 
 private class UnterminatedQuoteException : Exception()
 
-/**
- * A single plain line describing [throwable], for showing to the user.
- *
- * Exception messages are often absent, so the class name is used as a
- * fallback rather than printing "null". Stack traces are never shown: they
- * mean nothing to someone typing words into a prompt.
- */
+/** A single plain line describing [throwable], for showing to the user. */
 internal fun describeFailure(throwable: Throwable): String =
     throwable.message?.takeIf(String::isNotBlank) ?: throwable::class.simpleName ?: "unknown error"
 
-/**
- * Splits a command line into a command and its arguments.
- *
- * Tokens are separated by whitespace; a token may instead be wrapped in double
- * quotes so that it can contain spaces. Escapes are not supported — a text
- * containing a double quote cannot be entered, which is an acceptable limit
- * for a REPL about letters.
- */
+/** Splits a command line into a command and its arguments, honouring double quotes. */
 private fun parseCommandLine(line: String): List<String> {
     val tokens = mutableListOf<String>()
     val token = StringBuilder()

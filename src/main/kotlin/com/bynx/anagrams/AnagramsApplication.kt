@@ -13,18 +13,7 @@ fun main() {
     )
 }
 
-/**
- * Runs the CLI and returns the process exit status: 0 normally, 1 if the
- * session ended in a failure.
- *
- * This is the last line of defence. [AnagramCommandLineRunner] already reports
- * and skips a command that fails, so anything arriving here has broken the
- * loop itself — a dead input stream, or an [Error] the loop deliberately did
- * not catch. There is no working session left to return to, so the program
- * says so in one plain line and stops instead of printing a stack trace.
- *
- * The streams are parameters so that this guard is testable.
- */
+/** Runs the CLI and returns the process exit status: 0 normally, 1 if the session failed. */
 fun runGuarded(input: BufferedReader, output: Appendable, errorOutput: Appendable): Int =
     try {
         AnagramCommandLineRunner().run(input, output)

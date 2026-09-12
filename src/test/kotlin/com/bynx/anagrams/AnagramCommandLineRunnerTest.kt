@@ -8,14 +8,8 @@ import kotlin.test.assertTrue
 class AnagramCommandLineRunnerTest {
 
     /** Feeds [commands] to the CLI and returns the lines it printed, prompts stripped. */
-    private fun run(vararg commands: String): List<String> {
-        val output = StringBuilder()
-        AnagramCommandLineRunner().run(commands.joinToString("\n").reader().buffered(), output)
-        return output.toString()
-            .split("\n")
-            .map { it.replace(Regex("^(> )+"), "").trim() }
-            .filter { it.isNotEmpty() }
-    }
+    private fun run(vararg commands: String): List<String> =
+        runWith(AnagramServiceImpl(), *commands)
 
     @Test
     fun `greets and exits`() {
@@ -101,7 +95,7 @@ class AnagramCommandLineRunnerTest {
         val output = run("help", "exit").joinToString("\n")
         assertTrue("check" in output)
         assertTrue("find" in output)
-        assertTrue("help" in output)
+        assertTrue("help                 show this help" in output)
         assertTrue("exit" in output)
     }
 
@@ -118,16 +112,11 @@ class AnagramCommandLineRunnerTest {
         assertEquals("Anagrams. Type 'help' for commands.\n> > > ", output.toString())
     }
 
-    /** A throwable that is an [Error] rather than an [Exception]. */
-    private class UnrecoverableTestError : Error()
-
-    /** An [AnagramService] whose commands always fail, to exercise the guard. */
-    private class FailingAnagramService(private val failure: () -> Throwable) : AnagramService() {
+    private class FailingAnagramService(private val failure: () -> Throwable) : AnagramService {
         override fun checkAnagrams(first: String, second: String): Boolean = throw failure()
         override fun findRecordedAnagramsOf(text: String): List<String> = throw failure()
     }
 
-    /** Feeds [commands] to a CLI backed by [anagramService]. */
     private fun runWith(anagramService: AnagramService, vararg commands: String): List<String> {
         val output = StringBuilder()
         AnagramCommandLineRunner(anagramService)
@@ -148,7 +137,10 @@ class AnagramCommandLineRunnerTest {
         )
         assertTrue("Something went wrong with that command. It has been skipped." in output)
         assertTrue("Detail: index unavailable" in output)
-        assertTrue(output.any { "check" in it }, "the loop kept running and printed the help text")
+        assertTrue(
+            "check <text> <text>  check whether two texts are anagrams" in output,
+            "the loop kept running and printed the help text",
+        )
     }
 
     @Test

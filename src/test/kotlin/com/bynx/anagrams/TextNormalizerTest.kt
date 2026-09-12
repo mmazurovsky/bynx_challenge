@@ -6,12 +6,7 @@ import kotlin.test.assertNotEquals
 
 class TextNormalizerTest {
 
-    private val textNormalizer = TextNormalizer()
-
-    @Test
-    fun `lowercases letters`() {
-        assertEquals("dormitory", textNormalizer.normalizeText("DoRmiToRy"))
-    }
+    private val textNormalizer: TextNormalizer = TextNormalizerImpl()
 
     @Test
     fun `drops whitespace`() {
@@ -19,42 +14,34 @@ class TextNormalizerTest {
     }
 
     @Test
-    fun `drops punctuation and symbols`() {
-        assertEquals("wormsandwich", textNormalizer.normalizeText("worm-sandwich!, (#)"))
-    }
+    fun `drops every character that is not a letter or digit`() {
+        // The dash cases below are, in order: hyphen-minus, en dash, em dash,
+        // non-breaking hyphen and minus sign.
+        val cases = listOf(
+            "worm-sandwich!, (#)" to "wormsandwich",
+            "a-b" to "ab",
+            "a\u2013b" to "ab",
+            "a\u2014b" to "ab",
+            "a\u2011b" to "ab",
+            "a\u2212b" to "ab",
+            "mother-in-law" to "motherinlaw",
+            "don't" to "dont",
+            "don\u2019t" to "dont",
+            "it's" to "its",
+            "Hello, World!" to "helloworld",
+            "a.b?c;" to "abc",
+            "(a)[b]{c}" to "abc",
+            "\"a\" \u201cb\u201d :c:" to "abc",
+            "a_b" to "ab",
+            "a+b" to "ab",
+            "#tag" to "tag",
+            "a=b" to "ab",
+            "  -- !! ~~ " to "",
+        )
 
-    @Test
-    fun `drops every dash variant`() {
-        // Hyphen-minus, en dash, em dash, non-breaking hyphen, minus sign.
-        assertEquals("ab", textNormalizer.normalizeText("a-b"))
-        assertEquals("ab", textNormalizer.normalizeText("a\u2013b"))
-        assertEquals("ab", textNormalizer.normalizeText("a\u2014b"))
-        assertEquals("ab", textNormalizer.normalizeText("a\u2011b"))
-        assertEquals("ab", textNormalizer.normalizeText("a\u2212b"))
-        assertEquals("motherinlaw", textNormalizer.normalizeText("mother-in-law"))
-    }
-
-    @Test
-    fun `drops both apostrophe forms`() {
-        assertEquals("dont", textNormalizer.normalizeText("don't"))
-        assertEquals("dont", textNormalizer.normalizeText("don\u2019t"))
-        assertEquals("its", textNormalizer.normalizeText("it's"))
-    }
-
-    @Test
-    fun `drops sentence punctuation and brackets`() {
-        assertEquals("helloworld", textNormalizer.normalizeText("Hello, World!"))
-        assertEquals("abc", textNormalizer.normalizeText("a.b?c;"))
-        assertEquals("abc", textNormalizer.normalizeText("(a)[b]{c}"))
-        assertEquals("abc", textNormalizer.normalizeText("\"a\" \u201cb\u201d :c:"))
-    }
-
-    @Test
-    fun `drops connectors and maths symbols`() {
-        assertEquals("ab", textNormalizer.normalizeText("a_b"))
-        assertEquals("ab", textNormalizer.normalizeText("a+b"))
-        assertEquals("tag", textNormalizer.normalizeText("#tag"))
-        assertEquals("ab", textNormalizer.normalizeText("a=b"))
+        cases.forEach { (input, expected) ->
+            assertEquals(expected, textNormalizer.normalizeText(input), "normalizing <$input>")
+        }
     }
 
     @Test
@@ -76,11 +63,6 @@ class TextNormalizerTest {
     }
 
     @Test
-    fun `returns empty string for input with no letters or digits`() {
-        assertEquals("", textNormalizer.normalizeText("  -- !! ~~ "))
-    }
-
-    @Test
     fun `returns empty string for empty input`() {
         assertEquals("", textNormalizer.normalizeText(""))
     }
@@ -99,8 +81,6 @@ class TextNormalizerTest {
 
     @Test
     fun `does not expand ligatures`() {
-        // Typographic and linguistic ligatures are single letters to the filter,
-        // so they never match their multi-letter spellings.
         assertNotEquals(textNormalizer.normalizeText("\ufb01le"), textNormalizer.normalizeText("file"))
         assertNotEquals(textNormalizer.normalizeText("\u00e6on"), textNormalizer.normalizeText("aeon"))
         assertNotEquals(textNormalizer.normalizeText("\u00df"), textNormalizer.normalizeText("ss"))
@@ -120,11 +100,6 @@ class TextNormalizerTest {
 
     @Test
     fun `signature sorts the normalized characters`() {
-        assertEquals("eilnst", textNormalizer.computeAnagramSignature("Listen!"))
-    }
-
-    @Test
-    fun `signatures of anagrams are equal`() {
-        assertEquals(textNormalizer.computeAnagramSignature("dormitory"), textNormalizer.computeAnagramSignature("dirty room"))
+        assertEquals("eilnst", textNormalizer.signatureOfNormalized(textNormalizer.normalizeText("Listen!")))
     }
 }

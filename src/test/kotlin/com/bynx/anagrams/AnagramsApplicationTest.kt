@@ -7,10 +7,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class AnagramsApplicationTest {
+internal class UnrecoverableTestError : Error()
 
-    /** A throwable that is an [Error] rather than an [Exception]. */
-    private class UnrecoverableTestError : Error()
+class AnagramsApplicationTest {
 
     /** A reader that fails the moment the CLI tries to read a command. */
     private class FailingReader(private val failure: () -> Throwable) : Reader() {

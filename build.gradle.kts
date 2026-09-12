@@ -17,8 +17,7 @@ application {
 
 dependencies {
     testImplementation(kotlin("test"))
-    testImplementation(platform("org.junit:junit-bom:5.11.4"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    // Redundant on Gradle 8, required from Gradle 9 on.
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
